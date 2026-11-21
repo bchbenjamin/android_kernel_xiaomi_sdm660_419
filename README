@@ -17,3 +17,58 @@ See Documentation/00-INDEX for a list of what is contained in each file.
 Please read the Documentation/process/changes.rst file, as it contains the
 requirements for building and running the kernel, and information about
 the problems which may result by upgrading your kernel.
+
+DroidSpaces compatibility (Redmi Note 5 Pro / whyred)
+=====================================================
+
+This fork tracks the SDM660 San-Kernel 4.19 source on the ``back`` base
+branch and documents a DroidSpaces-oriented configuration target for the
+Xiaomi Redmi Note 5 Pro (codename ``whyred``).
+
+The existing ``arch/arm64/configs/vendor/whyred-perf_defconfig`` already
+enables several kernel facilities used by Android container and namespace
+workloads, including:
+
+* ``CONFIG_NAMESPACES`` with UTS, PID and user namespaces
+* ``CONFIG_CGROUPS`` and CPU accounting/scheduling support
+* ``CONFIG_SECCOMP``
+* ``CONFIG_BPF_SYSCALL`` and BPF JIT support
+* ``CONFIG_OVERLAY_FS``
+
+These options provide a useful baseline for DroidSpaces, which targets older
+Android kernels and requires compatibility with legacy kernel interfaces.
+They do not, by themselves, certify that every DroidSpaces feature works on
+this device or ROM. In particular, the final kernel configuration, Android
+vendor/userspace integration, SELinux policy, runtime behavior and boot
+stability must be checked on the target Android 16 ROM. This repository has
+not been represented as device-tested or as a verified working DroidSpaces
+build merely by adding this documentation.
+
+Build starting point:
+
+.. code-block:: console
+
+    make O=out ARCH=arm64 vendor/whyred-perf_defconfig
+
+Review the resulting ``out/.config`` against the DroidSpaces requirements
+before building or flashing. Keep the device-specific ``whyred`` defconfig as
+the base; do not substitute another SDM660 device's defconfig.
+
+Credits and upstream
+====================
+
+* **San-Kernel / SDM660 kernel source:** Santhosh (``user-why-red``) and the
+  contributors to the original ``android_kernel_xiaomi_sdm660_419`` source
+  (https://github.com/user-why-red/android_kernel_xiaomi_sdm660_419).
+* **Linux kernel:** Linus Torvalds and the worldwide Linux kernel
+  contributors. See ``CREDITS`` and the in-tree licensing files for the
+  broader contributor and copyright record.
+* **Xiaomi SDM660 community:** device and platform contributors whose work
+  supports the SDM660 family, including ``whyred``.
+* **DroidSpaces:** the DroidSpaces project and its developers, including
+  DroidSpaces project (https://github.com/ravindu644/Droidspaces-OSS).
+  DroidSpaces is a separate project; this kernel fork is not an official DroidSpaces release.
+
+This fork retains the original kernel licensing and attribution. Consult
+``COPYING``, ``LICENSES/`` and individual source-file headers before
+redistributing modified binaries or source.
