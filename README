@@ -6,7 +6,7 @@ be rendered in a number of formats, like HTML and PDF. Please read
 Documentation/admin-guide/README.rst first.
 
 In order to build the documentation, use ``make htmldocs`` or
-``make pdfdocs``.  The formatted documentation can also be read online at:
+``make pdfdocs``. The formatted documentation can also be read online at:
 
     https://www.kernel.org/doc/html/latest/
 
@@ -17,3 +17,79 @@ See Documentation/00-INDEX for a list of what is contained in each file.
 Please read the Documentation/process/changes.rst file, as it contains the
 requirements for building and running the kernel, and information about
 the problems which may result by upgrading your kernel.
+
+DroidSpaces configuration (Redmi Note 5 Pro / whyred)
+=======================================================
+
+This branch carries a DroidSpaces-oriented configuration for the Xiaomi Redmi
+Note 5 Pro (codename ``whyred``), based on the SDM660 San-Kernel 4.19 source.
+The target is a non-GKI Linux 4.19.325 kernel.
+
+The device defconfig ``arch/arm64/configs/vendor/whyred-perf_defconfig`` now
+enables the DroidSpaces options supported by this source tree, including:
+
+* IPC and namespaces: ``SYSCTL``, ``SYSVIPC``, ``POSIX_MQUEUE``,
+  ``NAMESPACES``, ``PID_NS``, ``UTS_NS``, ``IPC_NS``.
+* Seccomp: ``SECCOMP`` and ``SECCOMP_FILTER``.
+* Cgroups and limits: ``CGROUP_DEVICE``, ``CGROUP_SCHED``,
+  ``FAIR_GROUP_SCHED``, ``CGROUP_FREEZER``, ``CGROUP_NET_PRIO``, ``MEMCG``,
+  ``MEMCG_SWAP``, ``CFS_BANDWIDTH``, ``CGROUP_PIDS`` and ``CGROUP_CPUACCT``.
+* Filesystems and firmware: ``DEVTMPFS``, ``OVERLAY_FS``, ``TMPFS_XATTR``,
+  ``TMPFS_POSIX_ACL``, ``FW_LOADER`` and ``FW_LOADER_USER_HELPER``.
+* Networking: network namespaces, VETH, bridge/netfilter, conntrack, iptables,
+  NAT, nftables, conntrack netlink, IPv6 NAT and MACVLAN.
+* ``USER_NS`` is enabled and ``ANDROID_PARANOID_NETWORK`` is disabled.
+
+Some names in the current DroidSpaces checklist are not Kconfig symbols in this
+4.19 tree, or have been renamed by the kernel: ``NF_CONNTRACK_NETLINK`` maps
+to ``NF_CT_NETLINK``; ``NF_CONNTRACK_IPV4`` and ``NF_CONNTRACK_IPV6`` are not
+separate options here; and the masquerade targets are ``IP_NF_TARGET_MASQUERADE``
+and ``IP6_NF_TARGET_MASQUERADE``. ``FW_LOADER_COMPRESS`` and
+``NETFILTER_XT_TARGET_MASQUERADE`` are also absent from this source version.
+The available equivalents are enabled in the generated configuration; unsupported symbols are not added as inert config lines.
+
+The source already contains the DroidSpaces non-GKI fixes for qtaguid inactive
+interfaces and cgroup no-prefix file names, so those patches were not applied
+a second time. Enabling ``CFS_BANDWIDTH`` exposed a missing
+``unthrottle_throttle`` label in the scheduler backport; the control-flow label
+has been restored so this configuration compiles.
+
+Build with Neutron Clang 24.0.0 (the 2026-09-06 build used for this test; https://github.com/Neutron-Toolchains/clang-build-catalogue/releases/tag/06092026):
+
+.. code-block:: console
+
+    export PATH=/path/to/neutron-clang/bin:$PATH
+    make O=out ARCH=arm64 LLVM=1 LLVM_IAS=1 vendor/whyred-perf_defconfig
+    ./scripts/check-droidspaces-config.sh out/.config
+    make O=out ARCH=arm64 LLVM=1 LLVM_IAS=1 Image.gz-dtb -j$(nproc)
+
+The resulting boot kernel is ``out/arch/arm64/boot/Image.gz-dtb`` and includes
+the ``sdm636-mtp-whyred.dtb`` device tree. The tested source reports
+``4.19.325-st21-San-Kernel-Revenant-R1.1.108`` as its kernel release string.
+
+A successful cross-compile and config audit do not establish that the kernel
+boots or that every DroidSpaces runtime probe passes on a particular Android
+16 ROM. Hardware boot, recovery installation, SELinux/vendor integration and
+the DroidSpaces app's Requirements check remain device-side validation steps.
+Do not flash without a known-good boot-partition backup and a recovery that can
+restore it.
+
+Credits and upstream
+====================
+
+* **San-Kernel / SDM660 kernel source:** Santhosh (``user-why-red``) and the
+  contributors to the original ``android_kernel_xiaomi_sdm660_419`` source
+  (https://github.com/user-why-red/android_kernel_xiaomi_sdm660_419).
+* **Linux kernel:** Linus Torvalds and the worldwide Linux kernel
+  contributors. See ``CREDITS`` and the in-tree licensing files for the
+  broader contributor and copyright record.
+* **Xiaomi SDM660 community:** device and platform contributors whose work
+  supports the SDM660 family, including ``whyred``.
+* **DroidSpaces:** the DroidSpaces project and its developers
+  (https://github.com/ravindu644/Droidspaces-OSS).
+  DroidSpaces is a separate project; this kernel fork is not an official
+  DroidSpaces release.
+
+This fork retains the original kernel licensing and attribution. Consult
+``COPYING``, ``LICENSES/`` and individual source-file headers before
+redistributing modified binaries or source.
